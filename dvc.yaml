@@ -2,10 +2,10 @@ stages:
   train:
     cmd: >
       python train.py &&
-      python tools/promote_best.py
+      python promote_best.py
     deps:
       - train.py
-      - tools/promote_best.py
+      - promote_best.py
       - waste-detection
       - yolo12m.pt
     params:

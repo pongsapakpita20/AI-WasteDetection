@@ -4,14 +4,17 @@
 import gradio as gr
 import cv2
 from ultralytics import YOLO
-from voice_guidance import speak_guidance  # Import ฟังก์ชันพูด
+from voice_guidance import speak_guidance, CLASS_NAME_MAP  # Import ฟังก์ชันพูดและ class names
 import threading
 import time
+import os
+from datetime import datetime
+from pathlib import Path
 
 # -------------------------------------------------------------------
 # (สำคัญ!) แก้ไข Path นี้ให้ตรงกับไฟล์ best.pt ที่คุณเทรนได้
 # -------------------------------------------------------------------
-MODEL_PATH = 'runs/detect/yolo12m_final/weights/best.pt' # << แก้ไขตรงนี้
+MODEL_PATH = 'artifacts/models/waste-sorter-best.pt' # ใช้โมเดลที่ promote แล้วจาก DVC pipeline
 # -------------------------------------------------------------------
 
 # 1. โหลดโมเดล AI ที่เทรนเสร็จแล้ว
@@ -29,12 +32,65 @@ SPEECH_CONF_THRESHOLD = 0.4          # conf ขั้นต่ำที่จะ
 SUSTAINED_FRAME_THRESHOLD = 2        # จำนวนเฟรมต่อเนื่องก่อนพูด (ลดความเข้มงวด)
 ANNOUNCE_COOLDOWN_SECONDS = 6        # เวลาระหว่างการพูดซ้ำคลาสเดิม
 
+# การตั้งค่าสำหรับบันทึกภาพ
+SAVE_IMAGES = True                   # เปิด/ปิดการบันทึกภาพ
+SAVE_CONF_THRESHOLD = 0.5            # conf ขั้นต่ำที่จะบันทึกภาพ
+SAVE_COOLDOWN_SECONDS = 3            # เวลาระหว่างการบันทึกภาพซ้ำ (วินาที)
+SAVE_DIR = "detected_waste"          # โฟลเดอร์สำหรับเก็บภาพ
+
 # ตัวแปรสถานะสำหรับระบบเสียง
 last_detected_class_for_speech = -1
 current_streak_class = -1
 current_streak_length = 0
 last_announced_class = -1
 last_announced_time = 0.0
+
+# ตัวแปรสถานะสำหรับบันทึกภาพ
+last_saved_class = -1
+last_saved_time = 0.0
+
+def save_detected_image(frame, class_id, confidence):
+    """
+    บันทึกภาพที่ตรวจจับได้ไปยังโฟลเดอร์ตามประเภทขยะ
+    """
+    global last_saved_class, last_saved_time
+    
+    if not SAVE_IMAGES:
+        return
+    
+    # ตรวจสอบ cooldown
+    now = time.time()
+    if class_id == last_saved_class and (now - last_saved_time) < SAVE_COOLDOWN_SECONDS:
+        return
+    
+    # ตรวจสอบ confidence threshold
+    if confidence < SAVE_CONF_THRESHOLD:
+        return
+    
+    try:
+        # ดึงชื่อคลาส
+        class_name = CLASS_NAME_MAP.get(class_id, f"unknown_{class_id}")
+        
+        # สร้างโฟลเดอร์ตามประเภทขยะ
+        class_dir = Path(SAVE_DIR) / class_name
+        class_dir.mkdir(parents=True, exist_ok=True)
+        
+        # สร้างชื่อไฟล์: timestamp_class_conf.jpg
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # milliseconds
+        filename = f"{timestamp}_{class_name}_{confidence:.2f}.jpg"
+        filepath = class_dir / filename
+        
+        # บันทึกภาพ
+        cv2.imwrite(str(filepath), frame)
+        
+        # อัปเดตสถานะ
+        last_saved_class = class_id
+        last_saved_time = now
+        
+        print(f"[SAVE] Saved: {filepath}")
+        
+    except Exception as e:
+        print(f"[SAVE] Error saving image: {e}")
 
 def run_speech_in_background():
     """
@@ -104,6 +160,10 @@ def process_frame(frame):
                 last_detected_class_for_speech = detected_class
                 last_announced_class = detected_class
                 last_announced_time = now
+                
+                # บันทึกภาพที่ตรวจจับได้ (ใช้ annotated_bgr ที่มีกรอบแล้ว)
+                save_detected_image(annotated_bgr, detected_class, detected_conf)
+                
                 try:
                     print(f"[SPEECH] trigger class={detected_class} conf={detected_conf:.2f}")
                 except Exception:
@@ -125,31 +185,49 @@ def process_frame(frame):
 def main():
     print("กำลังสร้าง Gradio Interface...")
     
+    # สร้างโฟลเดอร์สำหรับเก็บภาพ
+    if SAVE_IMAGES:
+        save_path = Path(SAVE_DIR)
+        save_path.mkdir(exist_ok=True)
+        print(f"บันทึกภาพไปที่: {save_path.absolute()}")
+    
     # เริ่ม Thread สำหรับการพูดแยกต่างหาก
     speech_thread = threading.Thread(target=run_speech_in_background, daemon=True)
     speech_thread.start()
 
-    # สร้างหน้าเว็บ
-    iface = gr.Interface(
-        fn=process_frame,
-        inputs=gr.Image(
-            type="numpy", 
-            sources=["webcam"],
-            streaming=True,
-            label="จ่อขยะที่กล้องนี้"
-        ),
-        outputs=gr.Image(
-            type="numpy", 
-            label="ผลการตรวจจับ"
-        ),
-        live=True, # ทำให้เป็น Real-time
-        title="🤖 ระบบคัดแยกขยะอัจฉริยะ (AI Waste Sorter)",
-        description="โครงงานโดย: พงศภัค, กฤติน, ภูริชทัต (ใช้ YOLOv12)"
-    )
+    # สร้างหน้าเว็บด้วย Blocks เพื่อควบคุม UI ได้มากขึ้น
+    with gr.Blocks(title="ระบบคัดแยกขยะอัจฉริยะ", theme=gr.themes.Soft()) as demo:
+        gr.Markdown("# 🤖 ระบบคัดแยกขยะอัจฉริยะ (AI Waste Sorter)")
+        gr.Markdown("โครงงานโดย: พงศภัค, กฤติน, ภูริชทัต (ใช้ YOLOv12)")
+        
+        with gr.Row():
+            input_image = gr.Image(
+                type="numpy",
+                sources=["webcam"],
+                streaming=True,
+                label="จ่อขยะที่กล้องนี้",
+                show_label=True,
+                show_download_button=False,
+                show_share_button=False,
+            )
+            output_image = gr.Image(
+                type="numpy",
+                label="ผลการตรวจจับ",
+                show_label=True,
+                show_download_button=False,
+                show_share_button=False,
+            )
+        
+        # ใช้ streaming event สำหรับ real-time processing (ไม่มีปุ่ม Clear/Flag)
+        input_image.stream(
+            fn=process_frame,
+            inputs=input_image,
+            outputs=output_image,
+        )
     
-    # 8. รันแอป
+    # รันแอป
     print("Interface พร้อมใช้งาน. เปิดในเบราว์เซอร์ของคุณ...")
-    iface.launch(share=False) # share=True ถ้าต้องการส่งลิงก์ให้คนอื่นดู
+    demo.launch(share=False)  # share=True ถ้าต้องการส่งลิงก์ให้คนอื่นดู
 
 if __name__ == '__main__':
     main()

@@ -1,4 +1,6 @@
 [core]
-    remote = localstore
+    remote = local
 ['remote "localstore"']
     url = ../.dvcstore
+['remote "local"']
+    url = D:\DVC-Storage
