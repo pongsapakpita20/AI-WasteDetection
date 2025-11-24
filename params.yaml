@@ -1,0 +1,21 @@
+train:
+  data: waste-detection/data.yaml
+  imgsz: 640
+  epochs: 100
+  batch: 8
+  patience: 20
+  save_period: 1
+  name: yolo12m_final
+  base_weights: yolo12m.pt
+
+evaluate:
+  data: waste-detection/data.yaml
+  split: val
+  imgsz: 640
+  batch: 8
+  conf: 0.25
+  iou: 0.7
+  device: null
+  weights: artifacts/models/waste-sorter-best.pt
+  metrics_out: artifacts/eval/metrics.json
+

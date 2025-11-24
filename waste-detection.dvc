@@ -1,0 +1,6 @@
+outs:
+- md5: 4783960d17fceec3e2b860c002506e7c.dir
+  size: 1160996351
+  nfiles: 31930
+  hash: md5
+  path: waste-detection

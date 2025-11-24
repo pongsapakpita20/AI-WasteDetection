@@ -1,0 +1,10 @@
+import pyttsx3
+
+engine = pyttsx3.init()
+voices = engine.getProperty('voices')
+for v in voices:
+    print(v.id)
+
+engine.setProperty('voice', voices[0].id)  # ลองเลือก voice ตัวแรก
+engine.say("Hello, this is a test")
+engine.runAndWait()

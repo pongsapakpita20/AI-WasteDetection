@@ -1,0 +1,9 @@
+/waste-detection
+/artifacts/
+/runs/
+/.dvc/cache/
+/.dvc/tmp/
+/.venv/
+/.gradio/
+/__pycache__/
+*.pt

@@ -1,0 +1,41 @@
+stages:
+  train:
+    cmd: >
+      python train.py &&
+      python tools/promote_best.py
+    deps:
+      - train.py
+      - tools/promote_best.py
+      - waste-detection
+      - yolo12m.pt
+    params:
+      - train.data
+      - train.imgsz
+      - train.epochs
+      - train.batch
+      - train.patience
+      - train.save_period
+      - train.name
+      - train.base_weights
+    outs:
+      - artifacts/models/waste-sorter-best.pt
+
+  evaluate:
+    cmd: python evaluate.py
+    deps:
+      - artifacts/models/waste-sorter-best.pt
+      - evaluate.py
+      - waste-detection
+    params:
+      - evaluate.data
+      - evaluate.split
+      - evaluate.imgsz
+      - evaluate.batch
+      - evaluate.conf
+      - evaluate.iou
+      - evaluate.device
+      - evaluate.weights
+      - evaluate.metrics_out
+    metrics:
+      - artifacts/eval/metrics.json
+
