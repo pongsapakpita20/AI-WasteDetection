@@ -131,13 +131,6 @@ dvc repro train
 
 ### ⚠️ เกี่ยวกับ DVC-Storage (`D:\DVC-Storage`)
 
-**ไม่จำเป็นต้องมี DVC-Storage!**
-
-#### ทำไมไม่จำเป็น:
-1. **โมเดลอยู่ใน Git แล้ว:** โมเดล `artifacts/models/waste-sorter-best.pt` ถูกเก็บใน Git repository แล้ว (~39 MB)
-2. **Dataset ดาวน์โหลดจาก Roboflow:** Dataset ดาวน์โหลดจาก Roboflow โดยตรง ไม่ต้องใช้ DVC
-3. **ใช้งานได้ทันที:** หลังจาก clone repository แล้วสามารถใช้งานได้เลย
-
 #### ถ้าต้องการใช้ DVC Pipeline (ไม่บังคับ):
 
 ถ้าต้องการใช้ DVC pipeline เพื่อเทรนหรือประเมินโมเดล สามารถตั้งค่า DVC remote storage ใหม่ได้:
