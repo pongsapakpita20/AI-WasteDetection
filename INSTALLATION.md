@@ -118,16 +118,7 @@ cd AI-WasteDetection
 
 โมเดลจะอยู่ใน `artifacts/models/waste-sorter-best.pt` แล้ว
 
-#### วิธีที่ 2: ดาวน์โหลดจาก DVC Storage (ถ้ามี DVC-Storage)
-```bash
-# ตั้งค่า DVC remote storage ก่อน (ถ้ายังไม่มี)
-dvc remote add -d local D:\DVC-Storage
-
-# ดาวน์โหลดโมเดล
-dvc pull artifacts/models/waste-sorter-best.pt.dvc
-```
-
-#### วิธีที่ 3: เทรนโมเดลใหม่
+#### วิธีที่ 2: เทรนโมเดลใหม่
 ```bash
 # เทรนโมเดล YOLO12M (ใช้เวลานาน - หลายชั่วโมง)
 python train.py
@@ -136,10 +127,38 @@ python train.py
 dvc repro train
 ```
 
+---
+
+### ⚠️ เกี่ยวกับ DVC-Storage (`D:\DVC-Storage`)
+
+**ไม่จำเป็นต้องมี DVC-Storage!**
+
+#### ทำไมไม่จำเป็น:
+1. **โมเดลอยู่ใน Git แล้ว:** โมเดล `artifacts/models/waste-sorter-best.pt` ถูกเก็บใน Git repository แล้ว (~39 MB)
+2. **Dataset ดาวน์โหลดจาก Roboflow:** Dataset ดาวน์โหลดจาก Roboflow โดยตรง ไม่ต้องใช้ DVC
+3. **ใช้งานได้ทันที:** หลังจาก clone repository แล้วสามารถใช้งานได้เลย
+
+#### ถ้าต้องการใช้ DVC Pipeline (ไม่บังคับ):
+
+ถ้าต้องการใช้ DVC pipeline เพื่อเทรนหรือประเมินโมเดล สามารถตั้งค่า DVC remote storage ใหม่ได้:
+
+**สำหรับเครื่องปลายทาง:**
+```bash
+# สร้างโฟลเดอร์ DVC-Storage (หรือใช้ path อื่น)
+mkdir D:\DVC-Storage
+
+# ตั้งค่า DVC remote storage
+dvc remote add -d local D:\DVC-Storage
+
+# หรือถ้าต้องการใช้ path อื่น
+dvc remote add -d local C:\YourPath\DVC-Storage
+```
+
 **หมายเหตุ:** 
-- โมเดลใช้ YOLO12M (YOLOv12 Medium) ซึ่งเป็นโมเดลขนาดกลางที่มีความแม่นยำดีและเร็ว
-- โมเดลถูกเก็บใน Git repository แล้ว (ขนาด ~39 MB) ดังนั้นไม่จำเป็นต้องมี DVC-Storage
+- โมเดลใช้ **YOLO12M** (YOLOv12 Medium) ซึ่งเป็นโมเดลขนาดกลางที่มีความแม่นยำดีและเร็ว
+- **ไม่จำเป็นต้องมี DVC-Storage** เพราะโมเดลอยู่ใน Git repository แล้ว
 - ถ้าไม่มี DVC-Storage ก็สามารถ clone repository และใช้โมเดลที่มากับ repository ได้เลย
+- DVC-Storage ใช้สำหรับเก็บ artifacts ขนาดใหญ่เท่านั้น แต่ตอนนี้โมเดลถูกเก็บใน Git แล้ว
 
 ดูรายละเอียดเพิ่มเติมใน [README_PIPELINE.md](README_PIPELINE.md)
 
