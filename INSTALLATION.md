@@ -85,7 +85,7 @@ pip install -r requirements.txt --no-deps
 
 1. ไปที่ลิงก์ด้านบน
 2. คลิก **Download** หรือ **Export**
-3. เลือกรูปแบบ **YOLO v5/v7/v8** หรือ **YOLOv8**
+3. เลือกรูปแบบ **YOLO v5/v7/v8** หรือ **YOLOv12**
 4. ดาวน์โหลดไฟล์ zip
 5. Extract ไฟล์ zip
 6. เปลี่ยนชื่อโฟลเดอร์เป็น `waste-detection` และวางไว้ในโฟลเดอร์โปรเจกต์
