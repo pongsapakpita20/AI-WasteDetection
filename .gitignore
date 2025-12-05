@@ -7,4 +7,3 @@
 *.pt
 !artifacts/models/waste-sorter-best.pt
 /detected_waste/
-INSTALLATION.md
