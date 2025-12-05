@@ -12,6 +12,9 @@
 - **CUDA 13.0** หรือสูงกว่า (สำหรับ GPU acceleration - ไม่บังคับ)
 - **Webcam** (สำหรับใช้งานระบบตรวจจับแบบ real-time)
 
+### โมเดลที่ใช้:
+- **YOLO12M** (YOLOv12 Medium) - โมเดลขนาดกลางที่มีความแม่นยำดีและเร็ว
+
 ### ฮาร์ดแวร์ที่แนะนำ:
 - **GPU**: NVIDIA GPU ที่รองรับ CUDA (แนะนำ)
 - **RAM**: อย่างน้อย 8 GB
@@ -72,36 +75,71 @@ pip install -r requirements.txt --no-deps
 **หมายเหตุ:** การติดตั้งอาจใช้เวลานาน (10-30 นาที) ขึ้นอยู่กับความเร็วอินเทอร์เน็ตและเครื่องคอมพิวเตอร์
 ---
 
-### 4. ดาวน์โหลด Dataset (ถ้ายังไม่มี)
+### 4. ดาวน์โหลด Dataset
 
-ถ้ายังไม่มี dataset ให้ดาวน์โหลดผ่าน DVC:
+ดาวน์โหลด dataset จาก Roboflow:
+
+**Roboflow Dataset:** [https://universe.roboflow.com/ai-project-i3wje/waste-detection-vqkjo/model/3](https://universe.roboflow.com/ai-project-i3wje/waste-detection-vqkjo/model/3)
+
+#### ขั้นตอนการดาวน์โหลด:
+
+1. ไปที่ลิงก์ด้านบน
+2. คลิก **Download** หรือ **Export**
+3. เลือกรูปแบบ **YOLO v5/v7/v8** หรือ **YOLOv8**
+4. ดาวน์โหลดไฟล์ zip
+5. Extract ไฟล์ zip
+6. เปลี่ยนชื่อโฟลเดอร์เป็น `waste-detection` และวางไว้ในโฟลเดอร์โปรเจกต์
 
 ```bash
-# ดาวน์โหลด dataset จาก DVC storage
-dvc pull waste-detection.dvc
+# ตัวอย่างโครงสร้างที่ถูกต้อง:
+AI-Waste-Sorter/
+├── waste-detection/          # โฟลเดอร์ dataset (ตั้งชื่อนี้)
+│   ├── data.yaml
+│   ├── train/
+│   ├── valid/
+│   └── test/
 ```
 
-หรือถ้าใช้ DVC remote storage อื่น ให้ตรวจสอบการตั้งค่าใน `.dvc/config`
+**หมายเหตุ:** โฟลเดอร์ต้องชื่อ `waste-detection` เพื่อให้สอดคล้องกับการตั้งค่าในโค้ด
 
 ---
 
-### 5. ดาวน์โหลดโมเดล Pre-trained (ถ้ายังไม่มี)
+### 5. ดาวน์โหลดโมเดล Pre-trained
 
-ถ้ายังไม่มีโมเดลที่เทรนแล้ว (`artifacts/models/waste-sorter-best.pt`) ให้:
+โมเดลที่ใช้: **YOLO12M** (YOLOv12 Medium)
 
-#### วิธีที่ 1: ดาวน์โหลดจาก DVC Storage
+#### วิธีที่ 1: ดาวน์โหลดจาก GitHub (แนะนำ)
+โมเดล `artifacts/models/waste-sorter-best.pt` จะถูกดาวน์โหลดอัตโนมัติเมื่อ clone repository:
+
 ```bash
+git clone https://github.com/pongsapakpita20/AI-WasteDetection.git
+cd AI-WasteDetection
+```
+
+โมเดลจะอยู่ใน `artifacts/models/waste-sorter-best.pt` แล้ว
+
+#### วิธีที่ 2: ดาวน์โหลดจาก DVC Storage (ถ้ามี DVC-Storage)
+```bash
+# ตั้งค่า DVC remote storage ก่อน (ถ้ายังไม่มี)
+dvc remote add -d local D:\DVC-Storage
+
+# ดาวน์โหลดโมเดล
 dvc pull artifacts/models/waste-sorter-best.pt.dvc
 ```
 
-#### วิธีที่ 2: เทรนโมเดลใหม่
+#### วิธีที่ 3: เทรนโมเดลใหม่
 ```bash
-# เทรนโมเดล (ใช้เวลานาน)
+# เทรนโมเดล YOLO12M (ใช้เวลานาน - หลายชั่วโมง)
 python train.py
 
 # หรือใช้ DVC pipeline
 dvc repro train
 ```
+
+**หมายเหตุ:** 
+- โมเดลใช้ YOLO12M (YOLOv12 Medium) ซึ่งเป็นโมเดลขนาดกลางที่มีความแม่นยำดีและเร็ว
+- โมเดลถูกเก็บใน Git repository แล้ว (ขนาด ~39 MB) ดังนั้นไม่จำเป็นต้องมี DVC-Storage
+- ถ้าไม่มี DVC-Storage ก็สามารถ clone repository และใช้โมเดลที่มากับ repository ได้เลย
 
 ดูรายละเอียดเพิ่มเติมใน [README_PIPELINE.md](README_PIPELINE.md)
 
@@ -224,16 +262,27 @@ pip install opencv-python
 ```bash
 # ตรวจสอบว่าไฟล์มีอยู่จริง
 dir artifacts\models\waste-sorter-best.pt
-
-# ถ้าไม่มี ให้เทรนโมเดลใหม่
-python train.py
 ```
 
-หรือแก้ไข path ใน `app.py`:
+**ถ้าไม่มีโมเดล:**
 
-```python
-MODEL_PATH = 'artifacts/models/waste-sorter-best.pt'  # แก้ไข path ตามที่คุณมี
-```
+1. **ดาวน์โหลดจาก GitHub (แนะนำ):** โมเดลจะถูกดาวน์โหลดอัตโนมัติเมื่อ clone repository
+   ```bash
+   git clone https://github.com/pongsapakpita20/AI-WasteDetection.git
+   cd AI-WasteDetection
+   ```
+
+2. **เทรนโมเดลใหม่:** ถ้าต้องการเทรนโมเดลเอง
+   ```bash
+   python train.py
+   ```
+
+3. **แก้ไข path ใน `app.py`:** ถ้าโมเดลอยู่ที่อื่น
+   ```python
+   MODEL_PATH = 'artifacts/models/waste-sorter-best.pt'  # แก้ไข path ตามที่คุณมี
+   ```
+
+**หมายเหตุ:** โมเดล YOLO12M (~39 MB) ถูกเก็บใน Git repository แล้ว ดังนั้นไม่จำเป็นต้องมี DVC-Storage
 
 ---
 

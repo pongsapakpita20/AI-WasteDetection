@@ -1,10 +1,9 @@
 /waste-detection
-/artifacts/
-/runs/
 /.dvc/cache/
 /.dvc/tmp/
 /.venv/
 /.gradio/
 /__pycache__/
 *.pt
+!artifacts/models/waste-sorter-best.pt
 /detected_waste/
